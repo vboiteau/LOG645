@@ -9,6 +9,6 @@ all:
 	$(CC) $(CFLAGS) -c $(SRC)
 	$(CC) $(LFLAGS) $(COMP) -o $(PROG)
 
-run:
-	./$(PROG)
+run: ./$(PROG)
+	./$(PROG) ${ARGS}
 	
