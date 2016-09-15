@@ -43,7 +43,17 @@ int main(int args,char *argv[])
 		{
 			for(j=0;j<8;j++)
 			{
+				if(j==0)
+				{
+					m1[i][j] = m0[i][j] + (i*n);
+				}
+				else
+				{
+					m1[i][j] = m0[i][j] + m1[i][j-1] + (i*n);
+				}
+				printf("%i\t", m1[i][j]);
 			}
+			printf("\n");
 		}	
 	}	
 	return 0;
