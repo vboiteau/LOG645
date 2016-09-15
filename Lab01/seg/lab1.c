@@ -50,7 +50,7 @@ int main(int args,char *argv[])
 				}
 				else
 				{
-					m1[i][j] = m0[i][j] + m1[i][j-1] + (i*n);
+					m1[i][j] = m0[i][j] + (m1[i][j-1] * n);
 				}
 				printf("%i\t", m1[i][j]);
 			}
