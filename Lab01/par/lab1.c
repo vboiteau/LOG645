@@ -53,7 +53,7 @@ int main(int args,char *argv[])
 			for(i=0;i<columns*rows;i++)
 			{
 				 MPI_Recv(&out, 4, MPI_INT,MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD,MPI_STATUS_IGNORE);	
-				printf("(%d,%d)=%d\n",out[2],out[3],out[0]);
+				printf("(%d,%d)=%d on %d\n",out[2],out[3],out[0],out[1]);
 			}
 			 }
 		    else
@@ -62,6 +62,7 @@ int main(int args,char *argv[])
 			while (counter <= columns*rows) {
 			    MPI_Recv(&number, 4, MPI_INT, 0, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 			    number[0] = number[0] + (number[2]+number[3])*number[1];
+			    number[1] = rank;
 			    MPI_Send(&number, 4,MPI_INT, 0, rank,MPI_COMM_WORLD);
 			    counter+=(size-1);
 			}
