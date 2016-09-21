@@ -1,4 +1,5 @@
 #include <mpi.h>
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -18,6 +19,8 @@ int main(int args,char *argv[])
     int c = atoi(argv[1]);
     int p = atoi(argv[2]);
     int n = atoi(argv[3]);
+    int columns = 8;
+    int rows = 8;
     int rank;
     int size;
     MPI_Init(&args, &argv);
@@ -28,31 +31,40 @@ int main(int args,char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     if(c == 1)
     {
-		int number[4] = {p,n,1,1};
+		int number[4];
+		number[0]=p;
+		number[1]=n;
 		if(rank ==0)
 		    {
 			int i;
 			int j;
-			for(i=1;i<size;i++)
-			{	
-				MPI_Send(&number, 4, MPI_INT,i, 0, MPI_COMM_WORLD);
+			int process_cursor=0;
+			for(i=0;i<columns;i++)
+			{
+			    number[2]=i;
+			    for (j = 0; j < rows; j++) {
+				number[3]=j;
+				MPI_Send(&number, 4, MPI_INT,process_cursor+1, 0, MPI_COMM_WORLD);
+				process_cursor++;
+				process_cursor %= size-1;
+			    }
 			}
-			for(i=1;i<size;i++)
-			{	
-				 MPI_Recv(&number, 4, MPI_INT,MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD,MPI_STATUS_IGNORE);	
-				printf("%d\n",number[3]);
+			int out[4];
+			for(i=0;i<columns*rows;i++)
+			{
+				 MPI_Recv(&out, 4, MPI_INT,MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD,MPI_STATUS_IGNORE);	
+				printf("(%d,%d)=%d\n",out[2],out[3],out[0]);
 			}
 			 }
 		    else
 		    {
+			int counter=rank;
+			while (counter <= columns*rows) {
 			    MPI_Recv(&number, 4, MPI_INT, 0, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-			    int i;
-			int solve[4];
-			for(i=0;i<4;i++)
-			{
-			solve[i] = number[i] * rank;
+			    number[0] = number[0] + (number[2]+number[3])*number[1];
+			    MPI_Send(&number, 4,MPI_INT, 0, rank,MPI_COMM_WORLD);
+			    counter+=(size-1);
 			}
-			    MPI_Send(&solve, 4,MPI_INT, 0, rank,MPI_COMM_WORLD);
 		    }
     }
     
