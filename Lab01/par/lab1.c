@@ -54,9 +54,15 @@ int main(int args,char *argv[])
 			for(i=0;i<columns*rows;i++)
 			{
 				 MPI_Recv(&out, 4, MPI_INT,MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD,MPI_STATUS_IGNORE);	
-				printf("(%d,%d)=%d on %d\n",out[2],out[3],out[0],out[1]);
 				matrix[out[2]][out[3]]=out[0];
 			}
+			for (i = 0; i < rows; i++) {
+			    for (j = 0; j< columns; j++) {
+			        printf("%d\t",matrix[i][j]);
+			    }
+			    printf("\n");
+			}
+			printf("\n");
 			 }
 		    else
 		    {
