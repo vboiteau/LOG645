@@ -38,11 +38,12 @@ int main(int args,char *argv[])
 		    {
 			int i;
 			int j;
+			int matrix[rows][columns];
 			int process_cursor=0;
-			for(i=0;i<columns;i++)
+			for(i=0;i<rows;i++)
 			{
 			    number[2]=i;
-			    for (j = 0; j < rows; j++) {
+			    for (j = 0; j < columns; j++) {
 				number[3]=j;
 				MPI_Send(&number, 4, MPI_INT,process_cursor+1, 0, MPI_COMM_WORLD);
 				process_cursor++;
@@ -54,6 +55,7 @@ int main(int args,char *argv[])
 			{
 				 MPI_Recv(&out, 4, MPI_INT,MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD,MPI_STATUS_IGNORE);	
 				printf("(%d,%d)=%d on %d\n",out[2],out[3],out[0],out[1]);
+				matrix[out[2]][out[3]]=out[0];
 			}
 			 }
 		    else
