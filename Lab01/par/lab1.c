@@ -28,21 +28,39 @@ int main(int args,char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     if(c == 1)
     {
-	int len = 64;
-	MPI_Bcast ( &len, 1, MPI_INT, 0, MPI_COMM_WORLD );
-	int i=rank;
-	while(i<len){
-	    printf("from %d pos %d\n",rank, i);
-	    i=i+size;
-	    usleep(1000);
-	}	
+		int number[4] = {p,n,1,1};
+		if(rank ==0)
+		    {
+			int i;
+			int j;
+			for(i=1;i<size;i++)
+			{	
+				MPI_Send(&number, 4, MPI_INT,i, 0, MPI_COMM_WORLD);
+			}
+			for(i=1;i<size;i++)
+			{	
+				 MPI_Recv(&number, 4, MPI_INT,MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD,MPI_STATUS_IGNORE);	
+				printf("%d\n",number[3]);
+			}
+			 }
+		    else
+		    {
+			    MPI_Recv(&number, 4, MPI_INT, 0, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			    int i;
+			int solve[4];
+			for(i=0;i<4;i++)
+			{
+			solve[i] = number[i] * rank;
+			}
+			    MPI_Send(&solve, 4,MPI_INT, 0, rank,MPI_COMM_WORLD);
+		    }
     }
     
     // End of program code
     gettimeofday (&tp, NULL); // Fin du chronometre
     procTimeEnd = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
     Texec = procTimeEnd - procTimeStart; //Temps d'execution en secondes
-    printf("%d\t%f\n", rank+1, Texec);
+   // printf("%d\t%f\n", rank+1, Texec);
     MPI_Finalize();
     gettimeofday (&tp, NULL); // Fin du chronometre
     timeEnd = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
