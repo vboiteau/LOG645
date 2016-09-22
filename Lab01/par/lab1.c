@@ -30,21 +30,26 @@ int main(int args,char *argv[])
     MPI_Comm_size(MPI_COMM_WORLD,&size);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	int number[5];
-	number[0]=p;
-	number[1]=n;
 	if(rank ==0)
 	{
 	    int i;
 	    int j;
 	    int k;
 	    int matrix[(n+1)][rows][columns];
+	    for(k=0;k<=n;k++){
+		for(i=0;i<rows;i++){
+		    for(j=0;j<columns;j++){
+			matrix[k][i][j]=p;
+		    }
+		}
+	    }
 	    int process_cursor=0;
 	    int suite=0;
-	    for(k=0;k<=n;k++){
+	    number[0]=matrix[0][0][0];
+	    for(k=1;k<=n;k++){
 		suite+=k;
 		number[1]=k;
 		number[4]=suite;
-		printf("suite %d\n\n",suite);
 		for(i=0;i<rows;i++)
 		{
 		    number[2]=i;
@@ -56,35 +61,33 @@ int main(int args,char *argv[])
 		    }
 		}
 	    }
-	    int out[4];
-	    for(i=0;i<(n+1)*columns*rows;i++)
+	    int out[5];
+	    for(i=0;i<n*columns*rows;i++)
 	    {
 		MPI_Recv(&out, 5, MPI_INT,MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD,MPI_STATUS_IGNORE);	
 		matrix[out[1]][out[2]][out[3]]=out[0];
 	    }
-	    for (k=0; k<=n; k++){
-		printf("%d alteration matrix\n",k);
-		for (i = 0; i < rows; i++) {
-		    for (j = 0; j< columns; j++) {
-			printf("%d\t",matrix[k][i][j]);
-		    }
-		    printf("\n");
-		}
-		printf("\n");
-	    }
+	    /*for (k=0; k<=n; k++){*/
+		/*printf("%d alteration matrix\n",k);*/
+		/*for (i = 0; i < rows; i++) {*/
+		    /*for (j = 0; j< columns; j++) {*/
+			/*printf("%d\t",matrix[k][i][j]);*/
+		    /*}*/
+		    /*printf("\n");*/
+		/*}*/
+		/*printf("\n");*/
+	    /*}*/
 	}
 	else
 	{
 	    int counter=rank;
-	    while (counter <= (n+1)*columns*rows) {
+	    while (counter <= n*columns*rows) {
 		MPI_Recv(&number, 5, MPI_INT, 0, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 		if (c==1){
 		    number[0] = number[0] + (number[2]+number[3])*number[4];
 		} else {
-		    if (number[1]>0){
-			number[0] = number[0]+number[2]*number[4];
-			/*number[0]=base*(pow((double)number[1],(double)number[3])+pow((double)number[1]-1,(double)));*/
-		    }
+		    number[0] = number[0]+number[2]*number[4];
+		    /*number[0]=base*(pow((double)number[1],(double)number[3])+pow((double)number[1]-1,(double)));*/
 		}
 		MPI_Send(&number, 5,MPI_INT, 0, rank,MPI_COMM_WORLD);
 		counter+=(size-1);
@@ -95,11 +98,13 @@ int main(int args,char *argv[])
     gettimeofday (&tp, NULL); // Fin du chronometre
     procTimeEnd = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
     Texec = procTimeEnd - procTimeStart; //Temps d'execution en secondes
-    // printf("%d\t%f\n", rank+1, Texec);
+     printf("proc %d\t%f\n", rank, Texec);
     MPI_Finalize();
     gettimeofday (&tp, NULL); // Fin du chronometre
     timeEnd = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
     Texec = timeEnd - timeStart; //Temps d'execution en secondes
-    printf("program took %f secondes\n", Texec);
+    if (rank==0){
+	printf("program took %f seconds\n", Texec);
+    }
     return 0;
 }
