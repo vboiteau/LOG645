@@ -21,11 +21,13 @@ int main(int args,char *argv[])
     int n = atoi(argv[3]);
     int m1[n+1][8][8];
     //Initialisation de la premiere matrice
-    int i,j,k;
+    int i,j,k,suite;
     if(c == 1)
     {
+	suite = 0;
 	for (k = 0; k < n+1; k++) {
-	    printf("altération %d\n",k);
+	    suite+=k;
+	    /*printf("altération %d\n",k);*/
 	    //Calcule de la deuxieme matrice
 	    for(i=0;i < rows; i++)
 	    {
@@ -33,15 +35,15 @@ int main(int args,char *argv[])
 		{
 		    usleep(1000);
 		    if(k>0){
-			m1[k][i][j] = (m1[k-1][i][j] + (i+j) * k);
+			m1[k][i][j] = p + (i+j) * suite;
 		    } else {
 			m1[k][i][j]=p;
 		    }
-		    printf("%i\t", m1[k][i][j]);	
+		    /*printf("%i\t", m1[k][i][j]);	*/
 		}
-		printf("\n");
+		/*printf("\n");*/
 	    }
-	    printf("\n");
+	    /*printf("\n");*/
 	}
     }
     if(c == 2)
