@@ -49,7 +49,6 @@ int main(int args,char *argv[])
     if(c == 2)
     {
 	for(k=0;k<=n;k++){
-	    printf("alteration %d\n",k);
 	    //Calcule de la deuxieme matrice
 	    for(i=0;i < 8; i++)
 	    {
@@ -68,11 +67,8 @@ int main(int args,char *argv[])
 		    } else {
 			m1[k][i][j]=p;
 		    }
-		    printf("%i\t", m1[k][i][j]);
 		}
-		printf("\n");
 	    }
-	    printf("\n");
 	}
     }	
     gettimeofday (&tp, NULL); // Fin du chronometre

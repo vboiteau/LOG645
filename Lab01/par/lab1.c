@@ -137,16 +137,6 @@ int main(int args,char *argv[])
 		    MPI_Recv(&out, 5, MPI_INT,MPI_ANY_SOURCE , 1, MPI_COMM_WORLD,MPI_STATUS_IGNORE);	
 		    matrix[out[2]][out[3]][out[4]]=out[0];
 		}
-		for (k=0; k<=n; k++){
-		    printf("%d alteration matrix\n",k);
-		    for (i = 0; i < rows; i++) {
-			for (j = 0; j< columns; j++) {
-			    printf("%d\t",matrix[k][i][j]);
-			}
-			printf("\n");
-		    }
-		    printf("\n");
-		}
 	    } else if(rank == 1 || rank == 2){
 		int k,i;
 		for (k = 1; k <= n ; k++) {
