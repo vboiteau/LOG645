@@ -36,7 +36,7 @@ int main(int args,char *argv[])
 		{
 		    for(j=0;j<columns;j++)
 		    {
-			usleep(1000);
+			usleep(50000);
 			if(k>0){
 			    m1[k][i][j] = p + (i + j)*k;
 			} else {
