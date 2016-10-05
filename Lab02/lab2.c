@@ -26,12 +26,12 @@ int main(int args,char *argv[])
     if(c == 1)
     {
 	suite = 0;
-#pragma omp parallel
-	{
-#pragma omp for collapse(3) 
 	    for (k = 0; k < n+1; k++) {
 		/*printf("altération %d\n",k);*/
 		//Calcule de la deuxieme matrice
+#pragma omp parallel
+	{
+#pragma omp for collapse(2) 
 		for(i=0;i < rows; i++)
 		{
 		    for(j=0;j<columns;j++)
