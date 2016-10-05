@@ -1,6 +1,6 @@
 PROG = run.sh
-COMP = lab1.o
-SRC = lab1.c
+COMP = lab2.o
+SRC = lab2.c
 CFLAGS = -g -std=c99 -fopenmp -fPIC -m64 -Wall
 LFLAGS = -fPIC -m64 -Wall
 CC = gcc
