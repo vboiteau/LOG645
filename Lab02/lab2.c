@@ -61,24 +61,33 @@ int main(int args,char *argv[])
     {
 	for(k=0;k<=n;k++){
 	    //Calcule de la deuxieme matrice
-	    for(i=0;i < 8; i++)
+	    for(i=0;i < rows; i++)
 	    {
-		for(j=0;j<8;j++)
+		for(j=columns-1;j>=0;j--)
 		{
-		    usleep(1000);
+		    usleep(50000);
 		    if(k>0){
-			if(j==0)
+			if(j==9)
 			{
-			    m1[k][i][j] = m1[k-1][i][j] + (i*k);
+			    m1[k][i][j] = m1[k-1][i][j] +i;
 			}
 			else
 			{
-			    m1[k][i][j] = m1[k-1][i][j] + (m1[k][i][j-1] * k);
+			    m1[k][i][j] = m1[k-1][i][j] + m1[k][i][j+1];
 			}
 		    } else {
 			m1[k][i][j]=p;
 		    }
 		}
+	    }
+
+	    for(i=0;i < rows; i++)
+	    {
+		for(j=0;j< columns;j++)
+		{
+		    printf("%d\t",m1[k][i][j]);
+		}
+		printf("\n");
 	    }
 	}
     }	
