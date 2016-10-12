@@ -95,7 +95,7 @@ int main(int args,char *argv[])
 	    {
 		for(j=columns-1;j>=0;j--)
 		{
-		    usleep(1000);
+		    usleep(50000);
 		    if(k>0){
 			if(j==9)
 			{
