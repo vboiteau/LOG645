@@ -7,7 +7,7 @@
 int columns = 10;
 int rows = 10;
 
-void printXY(int m[columns][rows]){
+void printXY(int m[rows][columns]){
     int i,j;
     for (i = 0; i < rows; ++i) {
         for (j = 0; j < columns; j++) {
@@ -86,9 +86,17 @@ int main(int args,char *argv[])
 	gettimeofday (&tp, NULL); // Debut du chronometre
 	timeEnd = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
 	Texec = timeEnd - timeStart; //Temps d'execution en secondes
+	printf("%s\n","first of seq");
+	printXY(m0[0]);
+	printf("%s\n","last of seq");
+	printXY(m0[n]);
+	printf("%s\n","last of par");
+	printXY(m1[n]);
     }
     if(c == 2)
     {
+	gettimeofday (&tp, NULL); // Debut du chronometre
+	timeStart = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
 	for(k=0;k<=n;k++){
 	    //Calcule de la deuxieme matrice
 	    for(i=0;i < rows; i++)
@@ -99,34 +107,50 @@ int main(int args,char *argv[])
 		    if(k>0){
 			if(j==9)
 			{
-			    m1[k][i][j] = m1[k-1][i][j] +i;
+			    m0[k][i][j] = m0[k-1][i][j] +i;
 			}
 			else
 			{
-			    m1[k][i][j] = m1[k-1][i][j] + m1[k][i][j+1];
+			    m0[k][i][j] = m0[k-1][i][j] + m0[k][i][j+1];
 			}
 		    } else {
-			m1[k][i][j]=p;
+			m0[k][i][j]=p;
 		    }
 		}
 	    }
-
-	    for(i=0;i < rows; i++)
-	    {
-		for(j=0;j< columns;j++)
-		{
-		    printf("%d\t",m1[k][i][j]);
-		}
-		printf("\n");
+	}
+	gettimeofday (&tp, NULL); // Debut du chronometre
+	timeEnd = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
+	TSeqExec = timeEnd - timeStart; //Temps d'execution en secondes
+	gettimeofday (&tp, NULL); // Debut du chronometre
+	timeStart = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
+	for (k = 0; k <= n; k++) {
+	    for (j = columns-1; j >= 0; j--) {
+		#pragma omp parallel for
+		for (i=0; i<rows; i++) {
+		    usleep(50000);
+	            if (k>0) {
+	                if (j==9) {
+	                    m1[k][i][j]=m1[k-1][i][j]+i;
+	                } else {
+			    m1[k][i][j]=m1[k-1][i][j]+m1[k][i][j+1];
+			}
+	            } else {
+			m1[k][i][j]=p;
+		    }
+	        }
 	    }
 	}
+	gettimeofday (&tp, NULL); // Debut du chronometre
+	timeEnd = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
+	Texec = timeEnd - timeStart; //Temps d'execution en secondes
+	printf("%s\n","first of seq");
+	printXY(m0[0]);
+	printf("%s\n","last of seq");
+	printXY(m0[n]);
+	printf("%s\n","last of par");
+	printXY(m1[n]);
     }	
-    printf("%s\n","first of seq");
-    printXY(&m0[0][0][0]);
-    printf("%s\n","last of seq");
-    printXY(&m0[n][0][0]);
-    printf("%s\n","last of par");
-    printXY(&m1[n][0][0]);
     float S = TSeqExec/Texec;
     printf("seq: %f secs, par: %f secs, S:%f, E:%f\n", TSeqExec, Texec,S,(S/64));
     return 0;
