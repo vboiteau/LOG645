@@ -1,0 +1,3 @@
+#!/bin/bash
+scp -r . $1@log645-srv-1.logti.etsmtl.ca:test
+ssh $1@log645-srv-1.logti.etsmtl.ca "cd test;make;make NPROC=$2 ARGS=\"$3 $4 $5 $6 $7\" run;cd ../;rm -rf test"
