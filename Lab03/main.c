@@ -19,6 +19,7 @@ int main(int args,char *argv[])
     int np = atoi(argv[3]);
     float td = atof(argv[4]);
     float h = atof(argv[5]);
+    printf("Arguments Values\nm\tn\tnp\ttd\th\n%d\t%d\t%d\t%.2f\t%.2f\n\n",m,n,np,td,h);
     int rank;
     int size;
     double timeStart, timeEnd, TSeqExec, TParExec;
