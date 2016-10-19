@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-
+#include "printer.h"
 void printResult (int np, int columns, int rows, float matrix[np][columns][rows]){
     int i,j,k;
     for (k = 0; k <= np; ++k) {
