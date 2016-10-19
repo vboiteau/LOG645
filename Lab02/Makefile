@@ -1,7 +1,7 @@
 PROG = run.sh
 COMP = lab2.o
 SRC = lab2.c
-CFLAGS = -g -std=c99 -fopenmp -fPIC -m64 -Wall
+CFLAGS = -g -std=gnu99 -fopenmp -fPIC -m64 -Wall
 LFLAGS = -std=gnu99 -fopenmp -fPIC -m64 -Wall
 CC = gcc
 
