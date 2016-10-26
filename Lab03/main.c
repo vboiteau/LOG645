@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "sys/time.h"
-
+#include "segmentation.c"
 int main(int args,char *argv[])
 {
     struct timeval tp;
@@ -29,6 +29,10 @@ int main(int args,char *argv[])
     // Start of programme code
     MPI_Comm_size(MPI_COMM_WORLD,&size);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    int mat[m][n];
+    int *vec[m*n];
+    agglomeration(m,n,mat,vec);
+    printf("%d\n",vec[12]);
     // End of program code
     gettimeofday (&tp, NULL); // Fin du chronometre
     timeEnd = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;

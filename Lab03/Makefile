@@ -1,8 +1,8 @@
 PROG = run.sh
 COMP = main.o
 SRC = main.c
-CFLAGS = -g -fPIC -m64 -Wall
-LFLAGS = -fPIC -m64 -Wall
+CFLAGS = -g -std=gnu99 -fPIC -m64 -Wall
+LFLAGS = -std=gnu99 -fPIC -m64 -Wall
 CC = mpicc
 LIBS = -lm
 

@@ -125,18 +125,18 @@ int main(int args,char *argv[])
 	gettimeofday (&tp, NULL); // Debut du chronometre
 	timeStart = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
 	for (k = 0; k <= n; k++) {
-	    for (j = columns-1; j >= 0; j--) {
+	    for (i=0;i<rows;i++) {
 		#pragma omp parallel for
-		for (i=0; i<rows; i++) {
+		for (j=(columns -1-i);j>=(0-i);j--) {
 		    usleep(50000);
 	            if (k>0) {
 	                if (j==9) {
-	                    m1[k][i][j]=m1[k-1][i][j]+i;
+	                    m1[k][i][j+i]=m1[k-1][i][j+i]+i;
 	                } else {
-			    m1[k][i][j]=m1[k-1][i][j]+m1[k][i][j+1];
+			    m1[k][i][j+i]=m1[k-1][i][j+i]+m1[k][i][j+1+i];
 			}
 	            } else {
-			m1[k][i][j]=p;
+			m1[k][i][j+i]=p;
 		    }
 	        }
 	    }
