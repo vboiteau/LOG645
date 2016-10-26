@@ -10,11 +10,11 @@ void printResult (int np, int columns, int rows, float matrix[np][columns][rows]
 };
 
 static void printTime (int np, int columns, int rows, float matrix[columns][rows]) {
-    int i,j,k;
-    printf("La plaque du pas %d va etre \n", k);
+    int i,j;
+    printf("La plaque du pas %d va etre \n", np);
     for (j = 0; j < columns; ++j) {
 	for (i = 0; i < rows; ++i) {
-	    printf("%.6f\t",matrix[j][i]);
+	    printf("%.3f\t",matrix[j][i]);
 	}
 	printf("\n");
     }
