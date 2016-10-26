@@ -72,15 +72,14 @@ int main(int args,char *argv[])
 	}
 	printResult(np, n, m, USeq);
 	// Start of programme code
-	/*int mat[m][n];*/
-	/*int *vec[m*n];*/
-	/*agglomeration(m,n,mat,vec);*/
-	/*printf("%d\n",vec[12]);*/
-	// End of program code
 	gettimeofday (&tp, NULL); // Fin du chronometre
 	timeEnd = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
 	TSeqExec = timeEnd - timeStart; //Temps d'execution en secondes
 	printf("program took %f seconds\n", TSeqExec);
+	/*float vec[m*n];*/
+	/*agglomeration(m,n,USeq,vec);*/
+	/*printf("%d\n",vec[12]);*/
+	// End of program code
 	// SEQUENTIAL END
     }
     MPI_Finalize();
