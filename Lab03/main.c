@@ -36,7 +36,7 @@ int main(int args,char *argv[])
 	    for (i = 0; i < m; i++) {
 	        usleep(TEMPS_ATTENTES);
 		if(k>0) {
-		    USeq[k][j][i] = (1-(4*td/(h*h)))*USeq[k-1][j][i]+(td/(h*h))*(USeq[k-1][j][i+1]+USeq[k-1][j][i-1]+USeq[k-1][j+1][i]+USeq[k-1][j-1][i]);
+		    USeq[k][j][i] = (1-(4*td/(h*h)))*USeq[k-1][j][i]+(td/(h*h))*((i<m-1?USeq[k-1][j][i+1]:0)+(i>0?USeq[k-1][j][i-1]:0)+(j<n-1?USeq[k-1][j+1][i]:0)+(j>0?USeq[k-1][j-1][i]:0));
 		} else {
 		    USeq[k][j][i] = i*(m-i-1) * j*(n-j-1);
 		} 
