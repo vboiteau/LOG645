@@ -1,0 +1,4 @@
+#!/bin/bash
+. config.sh
+scp -r . $MAT@log645-srv-1.logti.etsmtl.ca:test
+ssh $MAT@log645-srv-1.logti.etsmtl.ca "cd test;make;make NPROC=$nbproc ARGS=\"$m $n $np $td $h\" run;cd ../;rm -rf test"
