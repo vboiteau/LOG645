@@ -1,0 +1,21 @@
+#!/bin/bash
+read -p "Matricule? " MAT
+read -p "Nombre processeurs? (16)" nbproc
+nbproc=${nbproc:-16}
+read -p "m? (15)" m
+m=${m:-15}
+read -p "n? (10)" n
+n=${n:-10}
+read -p "np? (4)" np
+np=${np:-4}
+read -p "td? (0.001)" td
+td=${td:-0.001}
+read -p "h? (0.1)" h
+h=${h:-0.1}
+echo "MAT=\"$MAT\"" > config.sh
+echo "nbproc=$nbproc" >> config.sh
+echo "m=$m" >> config.sh
+echo "n=$n" >> config.sh
+echo "np=$np" >> config.sh
+echo "td=$td" >> config.sh
+echo "h=$h" >> config.sh

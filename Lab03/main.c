@@ -107,7 +107,17 @@ int main(int args,char *argv[])
 	timeEnd = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
 	TParExec = timeEnd - timeStart; //Temps d'execution en secondes
 	printResult(np, n, m, UPar);
-	printf("T1\t%.2f ms\nTP\t%.2f ms\nS\t%.2f\nE\t%.2f %\n\n", TSeqExec*1000, TParExec*1000, (TSeqExec/TParExec),((TSeqExec/TParExec)/size)*100);
+	float S = TSeqExec/TParExec;
+	float E = (S/size)*100;
+	printf("T1\t%.2f ms\nTP\t%.2f ms\nS\t%.2f\nE\t%.2f %\n\n", TSeqExec*1000, TParExec*1000, S,E);
+	FILE *json = fopen("stats.json","w");
+	if(json == NULL) {
+	    printf("stats file not created!");
+	} else {
+	    fprintf(json,"{\"input\":{\"nbproc\":%d,\"m\":%d,\"n\":%d,\"np\":%d,\"td\":%.4f,\"h\":%.4f},\"output\":{\"T1\":%.2f,\"TP\":%.2f,\"S\":%.2f,\"E\":%.2f}}",size,m,n,np,td,h,TSeqExec*1000, TParExec*1000, S, E);
+	    fclose(json);
+	}
+
 	/*float vec[m*n];*/
 	/*agglomeration(m,n,USeq,vec);*/
 	/*printf("%d\n",vec[12]);*/
