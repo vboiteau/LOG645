@@ -30,7 +30,6 @@
 #include "printer.h"
 #include "segmentation.h"
 
-
 /* #####   FUNCTION DEFINITIONS  -  LOCAL TO THIS SOURCE FILE   ##################### */
 float generateFirstInstanceCell (int m, int n, int i, int j);
 float sumImmediateNeighbours (float top, float right, float bottom, float left);
@@ -176,7 +175,6 @@ float generateFirstInstanceCell (int m, int n, int i, int j) {
     return value;
 }
 
-
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  sumImmediateNeighbours
@@ -187,7 +185,6 @@ float generateFirstInstanceCell (int m, int n, int i, int j) {
 float sumImmediateNeighbours(float top, float right, float bottom, float left) {
     return top + right + bottom + left;
 }
-
 
 /* 
  * ===  FUNCTION  ======================================================================
