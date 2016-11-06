@@ -1,26 +1,48 @@
+/*
+ * =====================================================================================
+ *
+ *       Filename:  main.c
+ *
+ *    Description:  Main file of lab 3 - Heat propagation
+ *
+ *        Version:  1.0
+ *        Created:  11/06/2016 12:53:23
+ *       Revision:  none
+ *       Compiler:  gcc
+ *
+ *         Author:  Vincent Boiteau-Robert (vboiteau), vboiteau94@gmail.com
+ *		    Julien Lemonde
+ *   Organization:  ETS
+ *
+ * =====================================================================================
+ */
+
+/* #####   HEADER FILE INCLUDES   ################################################### */
+#include <stdlib.h>
 #include <mpi.h>
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/time.h>
+
 #include "printer.h"
-#include "sys/time.h"
 #include "segmentation.h"
-#include "mod.c"
-float getFirst (int m, int n, int i, int j) { 
-    float value = (float)(i * (m - i - 1) * j * (n - j -1));
-    return value;
-}
 
-float addSides(float top, float right, float bottom, float left) {
-    return top + right + bottom + left;
-}
 
-float getInstantValue (float mod, float old, float top, float right, float bottom, float left) {
-    return (1-(4*mod))*old+mod*(addSides(top, right, bottom, left));
-}
+/* #####   FUNCTION DEFINITIONS  -  LOCAL TO THIS SOURCE FILE   ##################### */
+float generateFirstInstanceCell (int m, int n, int i, int j);
+float sumImmediateNeighbours (float top, float right, float bottom, float left);
+float processTimeEffectOnCell (float mod, float old, float top, float right, float bottom, float left);
+float getMod (float td, float h);
 
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  main
+ *  Description:  start point of program
+ * =====================================================================================
+ */
 int main(int args,char *argv[])
 {
     struct timeval tp;
@@ -57,7 +79,7 @@ int main(int args,char *argv[])
 		for (i = 0; i < m; i++) {
 		    usleep(TEMPS_ATTENTES);
 		    if(k>0) {
-			USeq[k][j][i] = getInstantValue(
+			USeq[k][j][i] = processTimeEffectOnCell(
 			    mod,
 			    USeq[k-1][j][i],
 			    (j>0?USeq[k-1][j-1][i]:0),
@@ -66,7 +88,7 @@ int main(int args,char *argv[])
 			    (i>0?USeq[k-1][j][i-1]:0)
 			);
 		    } else {
-			USeq[k][j][i] = getFirst(m,n,i,j); 
+			USeq[k][j][i] = generateFirstInstanceCell(m,n,i,j); 
 		    } 
 		}
 	    }
@@ -109,18 +131,18 @@ int main(int args,char *argv[])
 	printResult(np, n, m, UPar);
 	float S = TSeqExec/TParExec;
 	float E = (S/size)*100;
-	printf("T1\t%.2f ms\nTP\t%.2f ms\nS\t%.2f\nE\t%.2f %\n\n", TSeqExec*1000, TParExec*1000, S,E);
+	printf("T1\t%.2lf ms\nTP\t%.2lf ms\nS\t%.2f\nE\t%.2f %%\n\n", (double)TSeqExec*1000, (double)TParExec*1000, S,E);
 	FILE *json = fopen("stats.json","w");
 	if(json == NULL) {
 	    printf("stats file not created!");
 	} else {
-	    fprintf(json,"{\"input\":{\"nbproc\":%d,\"m\":%d,\"n\":%d,\"np\":%d,\"td\":%.4f,\"h\":%.4f},\"output\":{\"T1\":%.2f,\"TP\":%.2f,\"S\":%.2f,\"E\":%.2f}}",size,m,n,np,td,h,TSeqExec*1000, TParExec*1000, S, E);
+	    fprintf(json,"{\"input\":{\"nbproc\":%d,\"m\":%d,\"n\":%d,\"np\":%d,\"td\":%.4f,\"h\":%.4f},\"output\":{\"T1\":%.2lf,\"TP\":%.2lf,\"S\":%.2f,\"E\":%.2f}}",size,m,n,np,td,h,TSeqExec*1000, TParExec*1000, S, E);
 	    fclose(json);
 	}
 
 	/*float vec[m*n];*/
 	/*agglomeration(m,n,USeq,vec);*/
-	/*printf("%d\n",vec[12]);*/
+	/*printf("%.2f\n",vec[12]);*/
 	// End of program code
 	// SEQUENTIAL END
     } else {
@@ -131,13 +153,58 @@ int main(int args,char *argv[])
 	    output[2] = input[2];
 	    usleep(TEMPS_ATTENTES);
 	    if (input[0]>0) {
-		output[3] = getInstantValue(mod, input[3], input[4], input[5], input[6], input[7]);
+		output[3] = processTimeEffectOnCell(mod, input[3], input[4], input[5], input[6], input[7]);
 	    } else {
-		output[3] = getFirst(m, n, input[2], input[1]);
+		output[3] = generateFirstInstanceCell(m, n, input[2], input[1]);
 	    }
 	    MPI_Send(&output, 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
 	}
     }
     MPI_Finalize();
     return 0;
+}
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  generateFirstInstanceCell
+ *  Description:  Will generate first instance of matrix cell since time 0 can't be
+ *	found by dependencies.
+ * =====================================================================================
+ */
+float generateFirstInstanceCell (int m, int n, int i, int j) { 
+    float value = (float)(i * (m - i - 1) * j * (n - j -1));
+    return value;
+}
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  sumImmediateNeighbours
+ *  Description:  Will sum neighbours of cell {top, right, bottom, left}, from last time
+ *	instance.
+ * =====================================================================================
+ */
+float sumImmediateNeighbours(float top, float right, float bottom, float left) {
+    return top + right + bottom + left;
+}
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  processTimeEffectOnCell
+ *  Description:  Calculation relative to the time effect on heat propagation
+ * =====================================================================================
+ */
+float processTimeEffectOnCell (float mod, float old, float top, float right, float bottom, float left) {
+    return (1-(4*mod))*old+mod*(sumImmediateNeighbours(top, right, bottom, left));
+}
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  getMod
+ *  Description:  Return the mod, obtain by operation on decritisized time and cell side
+ * =====================================================================================
+ */
+float getMod (float td, float h) {
+    return (td/(h*h));
 }

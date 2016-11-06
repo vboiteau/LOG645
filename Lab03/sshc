@@ -1,7 +1,8 @@
 #!/bin/bash
 . config.sh
 addr="$MAT@log645-srv-1.logti.etsmtl.ca"
-scp -r {*.c,*.h,Makefile} $addr:test
+ssh $addr "mkdir test"
+scp -r {*.c,*.h,Makefile} $addr:test/.
 ssh $addr "cd test;make;make NPROC=$nbproc ARGS=\"$m $n $np $td $h\" run"
 scp -r $addr:test/stats.json .
 ssh $addr "rm -rf test"
