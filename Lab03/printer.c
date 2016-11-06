@@ -1,20 +1,40 @@
+/*
+ * =====================================================================================
+ *
+ *       Filename:  printer.c
+ *
+ *    Description:  Matrix printer functions
+ *
+ *        Version:  1.0
+ *        Created:  11/06/2016 18:01:05
+ *       Revision:  none
+ *       Compiler:  gcc
+ *
+ *         Author:  Vincent Boiteau-Robert (vboiteau), vboiteau94@gmail.com
+ *   Organization:  
+ *
+ * =====================================================================================
+ */
+
+/* #####   HEADER FILE INCLUDES   ################################################### */
+#include <stdlib.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include "printer.h"
-static void printTime (int np, int columns, int rows, float matrix[columns][rows]);
 
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  printResult
+ *  Description:  Will print matrix
+ * =====================================================================================
+ */
 void printResult (int np, int columns, int rows, float matrix[np][columns][rows]){
-    printTime(0, columns, rows, matrix[0]);
-    printTime(np, columns, rows, matrix[np]);
-};
-
-static void printTime (int np, int columns, int rows, float matrix[columns][rows]) {
     int i,j;
     printf("La plaque du pas %d va etre \n", np);
     for (j = 0; j < columns; ++j) {
 	for (i = 0; i < rows; ++i) {
-	    printf("%.3f\t",matrix[j][i]);
+	    printf("%.3f\t",matrix[np][j][i]);
 	}
 	printf("\n");
     }
