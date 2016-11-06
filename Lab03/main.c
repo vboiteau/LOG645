@@ -136,7 +136,7 @@ int main(int args,char *argv[])
 	if(json == NULL) {
 	    printf("stats file not created!");
 	} else {
-	    fprintf(json,"{\"input\":{\"nbproc\":%d,\"m\":%d,\"n\":%d,\"np\":%d,\"td\":%.4f,\"h\":%.4f},\"output\":{\"T1\":%.2lf,\"TP\":%.2lf,\"S\":%.2f,\"E\":%.2f}}",size,m,n,np,td,h,TSeqExec*1000, TParExec*1000, S, E);
+	    fprintf(json, "{\"input\":{\"nbproc\":%d,\"m\":%d,\"n\":%d,\"np\":%d,\"td\":%.4f,\"h\":%.4f},\"output\":{\"T1\":%.2lf,\"TP\":%.2lf,\"S\":%.2f,\"E\":%.2f}}", size, m, n, np, td, h, TSeqExec*1000, TParExec*1000, S, E);
 	    fclose(json);
 	}
 
