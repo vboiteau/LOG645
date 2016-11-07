@@ -59,7 +59,7 @@ int main(int args,char *argv[]) {
     int rank;
     int size;
     int TEMPS_ATTENTES=5;
-    struct timeval tp;
+    struct timeval tseq;
     double timeStart, timeEnd, TSeqExec, TParExec;
     int i, j, k;
     MPI_Init(&args, &argv);
@@ -75,9 +75,9 @@ int main(int args,char *argv[]) {
                 USeq[0][j][i] = generateFirstInstanceCell(m,n,i,j); 
 	    }
 	}
-	printResult(0, n, m, USeq);
-        gettimeofday (&tp, NULL); // Debut du chronometre
-	timeStart = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
+	/*printResult(0, n, m, USeq);*/
+        gettimeofday (&tseq, NULL); // Debut du chronometre
+	timeStart = (double) (tseq.tv_sec) + (double) (tseq.tv_usec) / 1e6;
 	for (k=1;k<=np;k++){
 	    for (j = 0; j < n; ++j) {
 		for (i = 0; i < m; i++) {
@@ -93,18 +93,38 @@ int main(int args,char *argv[]) {
 		}
 	    }
 	}
-	printResult(np, n, m, USeq);
-	gettimeofday (&tp, NULL); // Fin du chronometre
-	timeEnd = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
+	/*printResult(np, n, m, USeq);*/
+	gettimeofday (&tseq, NULL); // Fin du chronometre
+	timeEnd = (double) (tseq.tv_sec) + (double) (tseq.tv_usec) / 1e6;
 	TSeqExec = timeEnd - timeStart; //Temps d'execution en secondes
 	for (j = 0; j < n; ++j) {
 	    for (i = 0; i < m; ++i) {
                 UPar[0][j][i] = generateFirstInstanceCell(m,n,i,j); 
 	    }
 	}
-	printResult(0, n, m, UPar);
-	gettimeofday(&tp, NULL);
-	timeStart = (double) (tp.tv_sec) + (double) (tp.tv_usec)/1e6;
+	/*printResult(0, n, m, UPar);*/
+        /*-----------------------------------------------------------------------------
+         *  Matrix size evaluation
+         *-----------------------------------------------------------------------------*/
+        int poolAvailableForProcessing = size - 1;
+        float nbOfLoopForCol = m / poolAvailableForProcessing;
+        float nbOfLoopForRow = n / poolAvailableForProcessing;
+        if (nbOfLoopForCol>=1||nbOfLoopForRow>=1) {
+            printf("As at least one side 1xnbOfProc\n");
+            if (nbOfLoopForCol<=nbOfLoopForRow) {
+                printf("row processing\n");
+            } else {
+                printf("column processing\n");
+            }
+        } else {
+            printf("Matrix is small.\n");
+        }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank==0) {
+        struct timeval tpar;
+	gettimeofday(&tpar, NULL);
+	timeStart = (double) (tpar.tv_sec) + (double) (tpar.tv_usec)/1e6;
 	int proc_cursor = 0;
 	for (k = 1;k <= np;k++) {
 	    input[0]=(float)k;
@@ -112,13 +132,11 @@ int main(int args,char *argv[]) {
 		input[1]=(float)j;
 		for (i = 0; i < m; i++) {
 		    input[2]=(float)i;
-		    if (k>0) {
-		        input[3]=UPar[k-1][j][i];
-			input[4]=(j>0?UPar[k-1][j-1][i]:0);
-			input[5]=(i<m-1?UPar[k-1][j][i+1]:0);
-			input[6]=(j<n-1?UPar[k-1][j+1][i]:0);
-			input[7]=(i>0?UPar[k-1][j][i-1]:0);
-		    }
+                    input[3]=UPar[k-1][j][i];
+                    input[4]=(j>0?UPar[k-1][j-1][i]:0);
+                    input[5]=(i<m-1?UPar[k-1][j][i+1]:0);
+                    input[6]=(j<n-1?UPar[k-1][j+1][i]:0);
+                    input[7]=(i>0?UPar[k-1][j][i-1]:0);
 		    MPI_Send(&input, 8, MPI_FLOAT, (proc_cursor+1), 0, MPI_COMM_WORLD);
 		    proc_cursor++;
 		    proc_cursor%=(size-1);
@@ -130,10 +148,10 @@ int main(int args,char *argv[]) {
 		UPar[(int) output[0]][(int) output[1]][(int) output[2]]=output[3];
 	    }
 	}
-	gettimeofday (&tp, NULL); // Fin du chronometre
-	timeEnd = (double) (tp.tv_sec) + (double) (tp.tv_usec) / 1e6;
+	gettimeofday (&tpar, NULL); // Fin du chronometre
+	timeEnd = (double) (tpar.tv_sec) + (double) (tpar.tv_usec) / 1e6;
 	TParExec = timeEnd - timeStart; //Temps d'execution en secondes
-	printResult(np, n, m, UPar);
+	/*printResult(np, n, m, UPar);*/
 	float S = TSeqExec/TParExec;
 	float E = (S/size)*100;
 	printf("T1\t%.2lf ms\nTP\t%.2lf ms\nS\t%.2f\nE\t%.2f %%\n\n", (double)TSeqExec*1000, (double)TParExec*1000, S,E);
