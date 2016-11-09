@@ -43,8 +43,7 @@ float getMod (float td, float h);
  * =====================================================================================
  */
 int main(int args,char *argv[]) {
-    if(args != 6)
-    {
+    if (args != 6) {
 	printf("Il faut absolument avoir 6 arguments (m, n, np, td, h)\n");
 	return 1;
     }
@@ -67,8 +66,10 @@ int main(int args,char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     float input [8] = {0.0};
     float output [4] = {0.0};
+    /*-----------------------------------------------------------------------------
+     *  Sequential code
+     *-----------------------------------------------------------------------------*/
     if(rank == 0) {
-	// SEQUENTIAL BEGIN
 	printf("Arguments Values\nm\tn\tnp\ttd\th\n%d\t%d\t%d\t%.2f\t%.2f\n\n",m,n,np,td,h);
 	for (j = 0; j < n; ++j) {
 	    for (i = 0; i < m; ++i) {
@@ -97,7 +98,14 @@ int main(int args,char *argv[]) {
 	gettimeofday (&tseq, NULL); // Fin du chronometre
 	timeEnd = (double) (tseq.tv_sec) + (double) (tseq.tv_usec) / 1e6;
 	TSeqExec = timeEnd - timeStart; //Temps d'execution en secondes
-	for (j = 0; j < n; ++j) {
+    }
+
+    /*-----------------------------------------------------------------------------
+     *  End of sequential code
+     *  Parallel code
+     *-----------------------------------------------------------------------------*/
+    if (rank == 0) {
+        for (j = 0; j < n; ++j) {
 	    for (i = 0; i < m; ++i) {
                 UPar[0][j][i] = generateFirstInstanceCell(m,n,i,j); 
 	    }
@@ -184,6 +192,9 @@ int main(int args,char *argv[]) {
 	    MPI_Send(&output, 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
 	}
     }
+    /*-----------------------------------------------------------------------------
+     *  End Parallel code
+     *-----------------------------------------------------------------------------*/
     MPI_Finalize();
     return 0;
 }
