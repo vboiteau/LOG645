@@ -5,4 +5,4 @@ ssh $addr "mkdir test"
 scp -r {*.c,*.h,Makefile} $addr:test/.
 ssh $addr "cd test;make;make NPROC=$nbproc ARGS=\"$m $n $np $td $h\" run"
 scp -r $addr:test/stats.json .
-ssh $addr "rm -rf test"
+ssh $addr "pkill run.sh;rm -rf test"

@@ -31,12 +31,14 @@
  */
 void printResult (int np, int columns, int rows, float matrix[np][columns][rows]){
     int i,j;
-    printf("La plaque du pas %d va etre \n", np);
     for (j = 0; j < columns; ++j) {
-	for (i = 0; i < rows; ++i) {
-	    printf("%.3f\t",matrix[np][j][i]);
-	}
-	printf("\n");
+        for (i = 0; i < rows; ++i) {
+            printf("%.3f",matrix[np][j][i]);
+            if (i<(rows-1)) {
+                printf(",");
+            }
+        }
+        printf("\n");
     }
     printf("\n");
 };

@@ -29,6 +29,8 @@
 
 #include "printer.h"
 #include "segmentation.h"
+    
+int TEMPS_ATTENTES=5;
 
 /* #####   FUNCTION DEFINITIONS  -  LOCAL TO THIS SOURCE FILE   ##################### */
 float generateFirstInstanceCell (int m, int n, int i, int j);
@@ -54,18 +56,17 @@ int main(int args,char *argv[]) {
     float h = atof(argv[5]);
     float mod = getMod(td, h);
     float USeq[np+1][n][m];
-    float UPar[np+1][n][m];
+    int debug = 1;
     int rank;
     int size;
-    int TEMPS_ATTENTES=5;
-    struct timeval tseq;
+    struct timeval tseq, tpar;
     double timeStart, timeEnd, TSeqExec, TParExec;
     int i, j, k;
     MPI_Init(&args, &argv);
     MPI_Comm_size(MPI_COMM_WORLD,&size);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    float input [8] = {0.0};
-    float output [4] = {0.0};
+    float input [8] = {0};
+    float output [4] = {0};
     /*-----------------------------------------------------------------------------
      *  Sequential code
      *-----------------------------------------------------------------------------*/
@@ -76,13 +77,14 @@ int main(int args,char *argv[]) {
                 USeq[0][j][i] = generateFirstInstanceCell(m,n,i,j); 
 	    }
 	}
-	/*printResult(0, n, m, USeq);*/
+	if (debug) {
+            printResult(0, n, m, USeq);
+        }
         gettimeofday (&tseq, NULL); // Debut du chronometre
 	timeStart = (double) (tseq.tv_sec) + (double) (tseq.tv_usec) / 1e6;
 	for (k=1;k<=np;k++){
 	    for (j = 0; j < n; ++j) {
 		for (i = 0; i < m; i++) {
-		    usleep(TEMPS_ATTENTES);
                     USeq[k][j][i] = processTimeEffectOnCell(
                         mod,
                         USeq[k-1][j][i],
@@ -94,75 +96,86 @@ int main(int args,char *argv[]) {
 		}
 	    }
 	}
-	/*printResult(np, n, m, USeq);*/
 	gettimeofday (&tseq, NULL); // Fin du chronometre
 	timeEnd = (double) (tseq.tv_sec) + (double) (tseq.tv_usec) / 1e6;
 	TSeqExec = timeEnd - timeStart; //Temps d'execution en secondes
+        if (debug) {
+            printResult(np, n, m, USeq);
+        }
     }
-
     /*-----------------------------------------------------------------------------
      *  End of sequential code
      *  Parallel code
      *-----------------------------------------------------------------------------*/
+    int partitionType = 0;//checkPartitionType(size, m, n);
+    float UPar[np+1][n][m];
     if (rank == 0) {
-        for (j = 0; j < n; ++j) {
-	    for (i = 0; i < m; ++i) {
+        for (j = 0; j < (partitionType<2?n:m); ++j) {
+	    for (i = 0; i < (partitionType<2?m:n); ++i) {
                 UPar[0][j][i] = generateFirstInstanceCell(m,n,i,j); 
 	    }
 	}
-	/*printResult(0, n, m, UPar);*/
-        /*-----------------------------------------------------------------------------
-         *  Matrix size evaluation
-         *-----------------------------------------------------------------------------*/
-        int poolAvailableForProcessing = size - 1;
-        float nbOfLoopForCol = m / poolAvailableForProcessing;
-        float nbOfLoopForRow = n / poolAvailableForProcessing;
-        if (nbOfLoopForCol>=1||nbOfLoopForRow>=1) {
-            printf("As at least one side 1xnbOfProc\n");
-            if (nbOfLoopForCol<=nbOfLoopForRow) {
-                printf("row processing\n");
-            } else {
-                printf("column processing\n");
-            }
-        } else {
-            printf("Matrix is small.\n");
+        if (debug) {
+            printResult(0, n, m, UPar);
         }
     }
+
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank==0) {
-        struct timeval tpar;
 	gettimeofday(&tpar, NULL);
 	timeStart = (double) (tpar.tv_sec) + (double) (tpar.tv_usec)/1e6;
 	int proc_cursor = 0;
 	for (k = 1;k <= np;k++) {
 	    input[0]=(float)k;
-	    for (j = 0; j < n; j++) {
+	    for (j = 0; j < (partitionType<2?n:m); j++) {
 		input[1]=(float)j;
-		for (i = 0; i < m; i++) {
-		    input[2]=(float)i;
-                    input[3]=UPar[k-1][j][i];
-                    input[4]=(j>0?UPar[k-1][j-1][i]:0);
-                    input[5]=(i<m-1?UPar[k-1][j][i+1]:0);
-                    input[6]=(j<n-1?UPar[k-1][j+1][i]:0);
-                    input[7]=(i>0?UPar[k-1][j][i-1]:0);
-		    MPI_Send(&input, 8, MPI_FLOAT, (proc_cursor+1), 0, MPI_COMM_WORLD);
-		    proc_cursor++;
-		    proc_cursor%=(size-1);
-		}
+                if (partitionType==0) {
+                    for (i = 0; i < (partitionType<2?m:n); i++) {
+                        input[2]=(float)i;
+                        input[3]=UPar[k-1][j][i];
+                        input[4]=(j>0?UPar[k-1][j-1][i]:0);
+                        input[5]=(i<m-1?UPar[k-1][j][i+1]:0);
+                        input[6]=(j<n-1?UPar[k-1][j+1][i]:0);
+                        input[7]=(i>0?UPar[k-1][j][i-1]:0);
+                        MPI_Send(&input, 8, MPI_FLOAT, (proc_cursor+1), 0, MPI_COMM_WORLD);
+                        proc_cursor++;
+                        proc_cursor%=(size-1);
+                    }
+                }
 	    }
-
-	    for (i = 0; i < n*m; ++i) {
-	        MPI_Recv(&output, 4, MPI_FLOAT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		UPar[(int) output[0]][(int) output[1]][(int) output[2]]=output[3];
-	    }
+            if (partitionType == 0) {
+                for (i = 0; i < n*m; ++i) {
+                    MPI_Recv(&output, 4, MPI_FLOAT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    UPar[(int) output[0]][(int) output[1]][(int) output[2]]=output[3];
+                }
+            }
 	}
+    } else {
+	if (partitionType == 0) {
+            for (i = rank; i < (np*m*n+1); i=i+(size-1)) {
+                MPI_Recv(&input, 8, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                output[0] = input[0];
+                output[1] = input[1];
+                output[2] = input[2];
+                if (input[0]>0) {
+                    output[3] = processTimeEffectOnCell(mod, input[3], input[4], input[5], input[6], input[7]);
+                } else {
+                    output[3] = generateFirstInstanceCell(m, n, input[2], input[1]);
+                }
+                MPI_Send(&output, 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
+            }
+	}
+    }
+    if (rank==0) {
 	gettimeofday (&tpar, NULL); // Fin du chronometre
 	timeEnd = (double) (tpar.tv_sec) + (double) (tpar.tv_usec) / 1e6;
 	TParExec = timeEnd - timeStart; //Temps d'execution en secondes
-	/*printResult(np, n, m, UPar);*/
+        if (debug) {
+            printResult(np, n, m, UPar);
+        }
 	float S = TSeqExec/TParExec;
-	float E = (S/size)*100;
-	printf("T1\t%.2lf ms\nTP\t%.2lf ms\nS\t%.2f\nE\t%.2f %%\n\n", (double)TSeqExec*1000, (double)TParExec*1000, S,E);
+	float E = S/size;
+	printf("T1\t%.6lf sec\nTP\t%.6lf sec\nS\t%.2f\nE\t%.2f %%\n\n", (double)TSeqExec, (double)TParExec, S,E*100);
 	FILE *json = fopen("stats.json","w");
 	if(json == NULL) {
 	    printf("stats file not created!");
@@ -172,25 +185,6 @@ int main(int args,char *argv[]) {
 	    fclose(json);
 	}
 
-	/*float vec[m*n];*/
-	/*agglomeration(m,n,USeq,vec);*/
-	/*printf("%.2f\n",vec[12]);*/
-	// End of program code
-	// SEQUENTIAL END
-    } else {
-	for (i = rank; i < (np*m*n+1); i=i+(size-1)) {
-	    MPI_Recv(&input, 8, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    output[0] = input[0];
-	    output[1] = input[1];
-	    output[2] = input[2];
-	    usleep(TEMPS_ATTENTES);
-	    if (input[0]>0) {
-		output[3] = processTimeEffectOnCell(mod, input[3], input[4], input[5], input[6], input[7]);
-	    } else {
-		output[3] = generateFirstInstanceCell(m, n, input[2], input[1]);
-	    }
-	    MPI_Send(&output, 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
-	}
     }
     /*-----------------------------------------------------------------------------
      *  End Parallel code
@@ -229,6 +223,7 @@ float sumImmediateNeighbours(float top, float right, float bottom, float left) {
  * =====================================================================================
  */
 float processTimeEffectOnCell (float mod, float old, float top, float right, float bottom, float left) {
+    usleep(5);
     return (1-(4*mod))*old+mod*(sumImmediateNeighbours(top, right, bottom, left));
 }
 

@@ -1,6 +1,7 @@
 #!/bin/bash
 addr="$1@log645-srv-1.logti.etsmtl.ca"
+ssh $addr "mkdir test"
 scp -r {*.c,*.h,Makefile} $addr:test
 ssh $addr "cd test;make;make NPROC=$7 ARGS=\"$2 $3 $4 $5 $6\" run"
 scp -r $addr:/test/stats.json .
-ssh $addr "rm -rf test"
+ssh $addr "pkill run.sh; rm -rf test"
