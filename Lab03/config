@@ -1,6 +1,5 @@
 #!/bin/bash
 read -p "Matricule? " MAT
-MAT=${MAT:'$MAT'}
 read -p "Nombre processeurs? (16)" nbproc
 nbproc=${nbproc:-16}
 read -p "m? (15)" m
