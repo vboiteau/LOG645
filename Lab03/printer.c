@@ -35,7 +35,7 @@ void printResult (int np, int columns, int rows, float matrix[np][columns][rows]
         for (i = 0; i < rows; ++i) {
             printf("%.3f",matrix[np][j][i]);
             if (i<(rows-1)) {
-                printf(",");
+                printf("\t");
             }
         }
         printf("\n");

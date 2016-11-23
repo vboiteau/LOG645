@@ -30,7 +30,7 @@
 #include "printer.h"
 #include "segmentation.h"
     
-int TEMPS_ATTENTES=5;
+unsigned int TEMPS_ATTENTES=5;
 
 /* #####   FUNCTION DEFINITIONS  -  LOCAL TO THIS SOURCE FILE   ##################### */
 float generateFirstInstanceCell (int m, int n, int i, int j);
@@ -55,8 +55,9 @@ int main(int args,char *argv[]) {
     float td = atof(argv[4]);
     float h = atof(argv[5]);
     float mod = getMod(td, h);
-    float USeq[np+1][n][m];
-    int debug = 1;
+    float USeq[2][n][m];
+    int debug = 0;
+    int sequentielle = 0;
     int rank;
     int size;
     struct timeval tseq, tpar;
@@ -70,37 +71,37 @@ int main(int args,char *argv[]) {
     /*-----------------------------------------------------------------------------
      *  Sequential code
      *-----------------------------------------------------------------------------*/
-    if(rank == 0) {
-	printf("Arguments Values\nm\tn\tnp\ttd\th\n%d\t%d\t%d\t%.2f\t%.2f\n\n",m,n,np,td,h);
-	for (j = 0; j < n; ++j) {
-	    for (i = 0; i < m; ++i) {
+    if(rank == 0 && sequentielle) {
+        printf("Arguments Values\nm\tn\tnp\ttd\th\n%d\t%d\t%d\t%.2f\t%.2f\n\n",m,n,np,td,h);
+        for (j = 0; j < n; ++j) {
+            for (i = 0; i < m; ++i) {
                 USeq[0][j][i] = generateFirstInstanceCell(m,n,i,j); 
-	    }
-	}
-	if (debug) {
+            }
+        }
+        if (debug) {
             printResult(0, n, m, USeq);
         }
         gettimeofday (&tseq, NULL); // Debut du chronometre
-	timeStart = (double) (tseq.tv_sec) + (double) (tseq.tv_usec) / 1e6;
-	for (k=1;k<=np;k++){
-	    for (j = 0; j < n; ++j) {
-		for (i = 0; i < m; i++) {
-                    USeq[k][j][i] = processTimeEffectOnCell(
-                        mod,
-                        USeq[k-1][j][i],
-                        (j>0?USeq[k-1][j-1][i]:0),
-                        (i<m-1?USeq[k-1][j][i+1]:0),
-                        (j<n-1?USeq[k-1][j+1][i]:0),
-                        (i>0?USeq[k-1][j][i-1]:0)
-                    );
-		}
-	    }
-	}
-	gettimeofday (&tseq, NULL); // Fin du chronometre
-	timeEnd = (double) (tseq.tv_sec) + (double) (tseq.tv_usec) / 1e6;
-	TSeqExec = timeEnd - timeStart; //Temps d'execution en secondes
+        timeStart = (double) (tseq.tv_sec) + (double) (tseq.tv_usec) / 1e6;
+        for (k=1;k<=np;k++){
+            for (j = 0; j < n; ++j) {
+                for (i = 0; i < m; i++) {
+                    USeq[k%2][j][i] = processTimeEffectOnCell(
+                            mod,
+                            USeq[(k-1)%2][j][i],
+                            (j>0?USeq[(k-1)%2][j-1][i]:0),
+                            (i<m-1?USeq[(k-1)%2][j][i+1]:0),
+                            (j<n-1?USeq[(k-1)%2][j+1][i]:0),
+                            (i>0?USeq[(k-1)%2][j][i-1]:0)
+                            );
+                }
+            }
+        }
+        gettimeofday (&tseq, NULL); // Fin du chronometre
+        timeEnd = (double) (tseq.tv_sec) + (double) (tseq.tv_usec) / 1e6;
+        TSeqExec = timeEnd - timeStart; //Temps d'execution en secondes
         if (debug) {
-            printResult(np, n, m, USeq);
+            printResult(np%2, n, m, USeq);
         }
     }
     /*-----------------------------------------------------------------------------
@@ -108,7 +109,7 @@ int main(int args,char *argv[]) {
      *  Parallel code
      *-----------------------------------------------------------------------------*/
     int partitionType = 0;//checkPartitionType(size, m, n);
-    float UPar[np+1][n][m];
+    float UPar[2][n][m];
     if (rank == 0) {
         for (j = 0; j < (partitionType<2?n:m); ++j) {
 	    for (i = 0; i < (partitionType<2?m:n); ++i) {
@@ -132,11 +133,11 @@ int main(int args,char *argv[]) {
                 if (partitionType==0) {
                     for (i = 0; i < (partitionType<2?m:n); i++) {
                         input[2]=(float)i;
-                        input[3]=UPar[k-1][j][i];
-                        input[4]=(j>0?UPar[k-1][j-1][i]:0);
-                        input[5]=(i<m-1?UPar[k-1][j][i+1]:0);
-                        input[6]=(j<n-1?UPar[k-1][j+1][i]:0);
-                        input[7]=(i>0?UPar[k-1][j][i-1]:0);
+                        input[3]=UPar[(k-1)%2][j][i];
+                        input[4]=(j>0?UPar[(k-1)%2][j-1][i]:0);
+                        input[5]=(i<m-1?UPar[(k-1)%2][j][i+1]:0);
+                        input[6]=(j<n-1?UPar[(k-1)%2][j+1][i]:0);
+                        input[7]=(i>0?UPar[(k-1)%2][j][i-1]:0);
                         MPI_Send(&input, 8, MPI_FLOAT, (proc_cursor+1), 0, MPI_COMM_WORLD);
                         proc_cursor++;
                         proc_cursor%=(size-1);
@@ -146,7 +147,7 @@ int main(int args,char *argv[]) {
             if (partitionType == 0) {
                 for (i = 0; i < n*m; ++i) {
                     MPI_Recv(&output, 4, MPI_FLOAT, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    UPar[(int) output[0]][(int) output[1]][(int) output[2]]=output[3];
+                    UPar[((int) output[0])%2][(int) output[1]][(int) output[2]]=output[3];
                 }
             }
 	}
@@ -171,7 +172,7 @@ int main(int args,char *argv[]) {
 	timeEnd = (double) (tpar.tv_sec) + (double) (tpar.tv_usec) / 1e6;
 	TParExec = timeEnd - timeStart; //Temps d'execution en secondes
         if (debug) {
-            printResult(np, n, m, UPar);
+            printResult(np%2, n, m, UPar);
         }
 	float S = TSeqExec/TParExec;
 	float E = S/size;
@@ -223,7 +224,7 @@ float sumImmediateNeighbours(float top, float right, float bottom, float left) {
  * =====================================================================================
  */
 float processTimeEffectOnCell (float mod, float old, float top, float right, float bottom, float left) {
-    usleep(5);
+    usleep(TEMPS_ATTENTES);
     return (1-(4*mod))*old+mod*(sumImmediateNeighbours(top, right, bottom, left));
 }
 
