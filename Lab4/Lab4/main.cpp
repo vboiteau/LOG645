@@ -12,6 +12,7 @@
 
 int main()
 {
+	//Variables
 	cl_device_id device_id = NULL;
 	cl_context context = NULL;
 	cl_command_queue command_queue = NULL;
@@ -23,7 +24,6 @@ int main()
 	cl_uint ret_num_platforms;
 	cl_int ret;
 
-	char string[MEM_SIZE];
 
 	FILE *fp;
 	char fileName[] = "./kernel.cl";
@@ -31,11 +31,11 @@ int main()
 	size_t source_size;
 
 	/* Load the source code containing the kernel*/
-    #ifdef __APPLE__
-    fp = fopen(fileName, "r");
-    #else
-	fopen_s(&fp,fileName, "r");
-    #endif
+#ifdef __APPLE__
+	fp = fopen(fileName, "r");
+#else
+	fopen_s(&fp, fileName, "r");
+#endif
 	if (!fp) {
 		fprintf(stderr, "Failed to load kernel.\n");
 		exit(1);
@@ -44,69 +44,75 @@ int main()
 	source_size = fread(source_str, 1, MAX_SOURCE_SIZE, fp);
 	fclose(fp);
 
-	/* Get Platform and Device Info */
+	//Required methods for OpenCL
+	//Creation de la plateforme et du deviceid
 	ret = clGetPlatformIDs(1, &platform_id, &ret_num_platforms);
 	ret = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_DEFAULT, 1, &device_id, &ret_num_devices);
 
-	/* Create OpenCL context */
+
+	//Création du contexte
 	context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &ret);
 
-	/* Create Command Queue */
+	//Creation de la file de commandes
 	command_queue = clCreateCommandQueue(context, device_id, 0, &ret);
 
-	/* Create Memory Buffer */
+//------------------------Creation des buffers à utiliser---------------------------------
 	int i, j;
 	float *A;
 	float *B;
-	float *C;
-
+	
 	A = (float *)malloc(4 * 4 * sizeof(float));
 	B = (float *)malloc(4 * 4 * sizeof(float));
-	C = (float *)malloc(4 * 4 * sizeof(float));
+	
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
 			A[i * 4 + j] = i * 4 + j + 1;
-			B[i * 4 + j] = j * 4 + i + 1;
 		}
 	}
-	cl_mem Amobj = NULL;
+	cl_mem Amobj;
 	cl_mem Bmobj = NULL;
-	cl_mem Cmobj = NULL;
-	//memobj = clCreateBuffer(context, CL_MEM_READ_WRITE, MEM_SIZE * sizeof(char), NULL, &ret);
-	Amobj = clCreateBuffer(context, CL_MEM_READ_WRITE, 4 * 4 * sizeof(float), A, &ret);
-	Bmobj = clCreateBuffer(context, CL_MEM_READ_WRITE, 4 * 4 * sizeof(float), B, &ret);
-	Cmobj = clCreateBuffer(context, CL_MEM_READ_WRITE, 4 * 4 * sizeof(float), NULL, &ret);
+	Amobj = clCreateBuffer(context, CL_MEM_READ_ONLY |
+		CL_MEM_COPY_HOST_PTR, 4 * 4 * sizeof(float), A, &ret);
+	Bmobj = clCreateBuffer(context, CL_MEM_WRITE_ONLY|
+		CL_MEM_COPY_HOST_PTR, 4 * 4 * sizeof(float), B, &ret);
+	
+//------------------------------------------------------------------------------------
+//------------------------Creation du programe----------------------------------------
 	program = clCreateProgramWithSource(context, 1, (const char **)&source_str,
 		(const size_t *)&source_size, &ret);
-
-	/* Build Kernel Program */
-	ret = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
-
-	/* Create OpenCL Kernel */
+	
+	//Build du programme
+	ret = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+	
+//------------------------------------------------------------------------------------
+//------------------------Create kernel----------------------------------------------
+	int multi = 3;
 	kernel = clCreateKernel(program, "dataParallel", &ret);
 
-	/* Set OpenCL Kernel Parameters */
-	ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&Amobj);
-	ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&Bmobj);
-	ret = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&Cmobj);
-	size_t global_item_size = 4;
+	ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), &Amobj);
+	ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), &Bmobj);
+	ret = clSetKernelArg(kernel, 2, sizeof(int), &multi);
+	
+//-----------------------Execution de commande-----------------------------------------
+	size_t global_item_size = 16;
 	size_t local_item_size = 1;
 	/* Execute OpenCL Kernel */
-	ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL,
-		&global_item_size, &local_item_size, 0, NULL, NULL);
-
-	/* Copy results from the memory buffer */
-	ret = clEnqueueReadBuffer(command_queue, Cmobj, CL_TRUE, 0, 4 * 4 * sizeof(float), C, 0, NULL, NULL);
 	
 
-	/* Display Result */
+	ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL,
+		&global_item_size, &local_item_size, 0, NULL, NULL);
+	clFinish(command_queue);
+	
+//-----------------------Lecture de reponses-------------------------------------------
+	ret = clEnqueueReadBuffer(command_queue, Bmobj, CL_TRUE, 0, 4 * 4 * sizeof(float), B, 0, NULL, NULL);
 	/* Display Results */
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
-			printf("%7.2f ", C[i * 4 + j]);
+			printf("%7.2f ", B[i * 4 + j]);
 		}
 		printf("\n");
 	}
+
 
 	/* Finalization */
 	ret = clFlush(command_queue);
@@ -116,13 +122,11 @@ int main()
 	ret = clReleaseMemObject(memobj);
 	ret = clReleaseMemObject(Amobj);
 	ret = clReleaseMemObject(Bmobj);
-	ret = clReleaseMemObject(Cmobj);
 	ret = clReleaseCommandQueue(command_queue);
 	ret = clReleaseContext(context);
 
 	free(source_str);
 	free(A);
 	free(B);
-	free(C);
 	return 0;
 }
