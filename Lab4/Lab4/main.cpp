@@ -31,7 +31,11 @@ int main()
 	size_t source_size;
 
 	/* Load the source code containing the kernel*/
+    #define __APPLE__
+    fp = fopen(fileName, "r");
+    #else
 	fopen_s(&fp,fileName, "r");
+    #endif
 	if (!fp) {
 		fprintf(stderr, "Failed to load kernel.\n");
 		exit(1);
