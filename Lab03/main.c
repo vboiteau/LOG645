@@ -27,7 +27,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "printer.h"
+#include "printer.hpp"
 #include "segmentation.h"
     
 unsigned int TEMPS_ATTENTES=5;
@@ -112,10 +112,10 @@ int main(int args,char *argv[]) {
     float UPar[2][n][m];
     if (rank == 0) {
         for (j = 0; j < (partitionType<2?n:m); ++j) {
-	    for (i = 0; i < (partitionType<2?m:n); ++i) {
+            for (i = 0; i < (partitionType<2?m:n); ++i) {
                 UPar[0][j][i] = generateFirstInstanceCell(m,n,i,j); 
-	    }
-	}
+            }
+        }
         if (debug) {
             printResult(0, n, m, UPar);
         }
@@ -193,6 +193,7 @@ int main(int args,char *argv[]) {
     MPI_Finalize();
     return 0;
 }
+
 
 /* 
  * ===  FUNCTION  ======================================================================
