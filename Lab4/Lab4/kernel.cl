@@ -5,18 +5,16 @@ __kernel void dataParallel(__global float* UPar,
     const float mod)
 {
     int id = get_global_id(0);
+    int i = id % m;
+    int j = (int)((id-i) / m);
     int size = get_global_size(0);
-    int lastMod = (m*n*k>2*m*n?m*n:0);
-    int left = (id%m!=0?lastMod + (id-1):0);
-    int top=id-m;
-    if (top <= 0 ) {
-        top = 0;
-    }
-    int right = (id%m!=m-1?lastMod + (id+1):0);
-    int bottom =(id+m<size?lastMod + (id+m):0);
-    float sides = (left?*(UPar+left):0)+(top?*(UPar+top):0)+(right?*(UPar+right):0)+(bottom?*(UPar+bottom):0);
-    printf("%.2f\t%d\n",sides, id);
+    int lastMod = (k%2?0:m*n);
     float last = UPar[lastMod+id];
+    float left = (i!=0?UPar[lastMod + (id-1)]:0);
+    float top = ( j != 0 ? UPar[lastMod + (id-m)]:0);
+    float right = (i!=m-1?UPar[lastMod + (id+1)]:0);
+    float bottom =(j!=n-1?UPar[lastMod + (id+m)]:0);
+    float sides = top + right + bottom + left;
     int current = m*n - lastMod + id;
     UPar[current]=(1-(4*mod))*last+mod*(sides);
 }

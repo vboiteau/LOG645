@@ -20,8 +20,7 @@ float sumImmediateNeighbours (float top, float right, float bottom, float left);
 float processTimeEffectOnCell (float mod, float old, float top, float right, float bottom, float left);
 float getMod (float td, float h);
 
-int main(int args, char *argv[])
-{
+int main(int args, char *argv[]) {
     /*-----------------------------------------------------------------------------
      * args instanciation 
      *-----------------------------------------------------------------------------*/
@@ -143,20 +142,21 @@ int main(int args, char *argv[])
 	
 	//Build du programme
 	ret = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    
+    //------------------------------------------------------------------------------------
+    //------------------------Create kernel----------------------------------------------
+
 	gettimeofday(&tpar, NULL);
 	timeStart = (double) (tpar.tv_sec) + (double) (tpar.tv_usec)/1e6;
     for (k = 1; k <= np; k++) {
         Uparmobj = clCreateBuffer(context, CL_MEM_READ_ONLY |
                 CL_MEM_COPY_HOST_PTR, 2 * m * n * sizeof(float), UPar, &ret);
-        //------------------------------------------------------------------------------------
-        //------------------------Create kernel----------------------------------------------
         kernel = clCreateKernel(program, "dataParallel", &ret);
         ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), &Uparmobj);
         ret = clSetKernelArg(kernel, 1, sizeof(int), &k);
         ret = clSetKernelArg(kernel, 2, sizeof(int), &m);
         ret = clSetKernelArg(kernel, 3, sizeof(int), &n);
         ret = clSetKernelArg(kernel, 4, sizeof(float), &mod);
-
         //-----------------------Execution de commande-----------------------------------------
         size_t global_item_size = m*n;
         size_t local_item_size = 1;
