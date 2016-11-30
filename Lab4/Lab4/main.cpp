@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
 #include "printer.hpp"
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
+#include <sys/time.h>
 #else
 #include <CL/cl.h>
+#include <ctime>
+#include <time.h>
+#include <atltime.h>
 #endif
 
 #define MEM_SIZE (128)
@@ -34,48 +37,52 @@ int main(int args, char *argv[]) {
     float td = atof(argv[4]);
     float h = atof(argv[5]);
     float mod = getMod(td, h);
-    float USeq[2][n][m];
+    float *USeq = (float *)malloc(2 * m*n*sizeof(float));
     float *UPar = (float *)malloc(2*m*n*sizeof(float));
-    int debug = 1;
+    int debug = 0;
     int sequentielle = 1;
     int size=1;
-    struct timeval tseq, tpar;
-    double timeStart, timeEnd, TSeqExec, TParExec;
+
+	
+	float TSeqExec, TParExec;
     int i, j, k;
     /*-----------------------------------------------------------------------------
      *  Sequential code
      *-----------------------------------------------------------------------------*/
+	
     if(sequentielle) {
         printf("Arguments Values\nm\tn\tnp\ttd\th\n%d\t%d\t%d\t%.2f\t%.2f\n\n",m,n,np,td,h);
         for (j = 0; j < n; ++j) {
             for (i = 0; i < m; ++i) {
-                USeq[0][j][i] = generateFirstInstanceCell(m,n,i,j); 
+                USeq[j*m+i] = generateFirstInstanceCell(m,n,i,j); 
             }
         }
         if (debug) {
-            printResult(m, n, (float *)USeq[0],0);
+            printResult(m, n, USeq,0);
         }
-        gettimeofday (&tseq, NULL); // Debut du chronometre
-        timeStart = (double) (tseq.tv_sec) + (double) (tseq.tv_usec) / 1e6;
+		clock_t debutSeq = clock();
+
         for (k=1;k<=np;k++){
+			int startPos = 0;
+			startPos = ((k + 1) % 2)*m*n;
             for (j = 0; j < n; ++j) {
                 for (i = 0; i < m; i++) {
-                    USeq[k%2][j][i] = processTimeEffectOnCell(
+                    USeq[(k%2?150:-150)+startPos] = processTimeEffectOnCell(
                             mod,
-                            USeq[(k+1)%2][j][i],
-                            (j>0?USeq[(k+1)%2][j-1][i]:0),
-                            (i<m-1?USeq[(k+1)%2][j][i+1]:0),
-                            (j<n-1?USeq[(k+1)%2][j+1][i]:0),
-                            (i>0?USeq[(k+1)%2][j][i-1]:0)
+                            *(USeq+startPos),
+                            (j>0?*(USeq+startPos - m):0),
+                            (i<m-1?*(USeq+startPos + 1):0),
+                            (j<n-1?*(USeq+startPos + m):0),
+                            (i>0?*(USeq+startPos - 1):0)
                             );
+					startPos++;
                 }
             }
         }
-        gettimeofday (&tseq, NULL); // Fin du chronometre
-        timeEnd = (double) (tseq.tv_sec) + (double) (tseq.tv_usec) / 1e6;
-        TSeqExec = timeEnd - timeStart; //Temps d'execution en secondes
+		clock_t finseq = clock();
+		TSeqExec = (float(finseq - debutSeq))/ CLOCKS_PER_SEC;
         if (debug) {
-            printResult(m, n, (float *)USeq[np%2], 0);
+            printResult(m, n, USeq, (np % 2)*n*m);
         }
     }
     /*-----------------------------------------------------------------------------
@@ -146,8 +153,7 @@ int main(int args, char *argv[]) {
     //------------------------------------------------------------------------------------
     //------------------------Create kernel----------------------------------------------
 
-	gettimeofday(&tpar, NULL);
-	timeStart = (double) (tpar.tv_sec) + (double) (tpar.tv_usec)/1e6;
+	clock_t debutPar = clock();
     for (k = 1; k <= np; k++) {
         Uparmobj = clCreateBuffer(context, CL_MEM_READ_ONLY |
                 CL_MEM_COPY_HOST_PTR, 2 * m * n * sizeof(float), UPar, &ret);
@@ -170,12 +176,10 @@ int main(int args, char *argv[]) {
         //-----------------------Lecture de reponses-------------------------------------------
         ret = clEnqueueReadBuffer(command_queue, Uparmobj, CL_TRUE, 0, 2 * m * n * sizeof(float), UPar, 0, NULL, NULL);
     }    
-	gettimeofday (&tpar, NULL); // Fin du chronometre
-	timeEnd = (double) (tpar.tv_sec) + (double) (tpar.tv_usec) / 1e6;
-	TParExec = timeEnd - timeStart; //Temps d'execution en secondes
+	clock_t finPar = clock();
+	TParExec = (float(finPar - debutPar)) / CLOCKS_PER_SEC;
 	/* Display Results */
-    gettimeofday (&tpar, NULL); // Fin du chronometre
-    timeEnd = (double) (tpar.tv_sec) + (double) (tpar.tv_usec) / 1e6;
+
     if (debug) {
         printResult(m, n, UPar, (np%2)*n*m);
     }
@@ -194,17 +198,10 @@ int main(int args, char *argv[]) {
     /*-----------------------------------------------------------------------------
      *  Print results
      *-----------------------------------------------------------------------------*/
-    float S = TSeqExec/TParExec;
-    float E = S/size;
-    printf("T1\t%.6lf sec\nTP\t%.6lf sec\nS\t%.2f\nE\t%.2f %%\n\n", (double)TSeqExec, (double)TParExec, S,E*100);
-    FILE *json = fopen("stats.json","w");
-    if(json == NULL) {
-        printf("stats file not created!");
-    } else {
-        fprintf(json, "{\"input\":{\"nbproc\":%d,\"m\":%d,\"n\":%d,\"np\":%d,\"td\":%.4f,\"h\":%.4f},", size, m, n, np, td, h);
-        fprintf(json, "\"output\":{\"T1\":%.2lf,\"TP\":%.2lf,\"S\":%.2f,\"E\":%.2f}}", TSeqExec*1000, TParExec*1000, S, E);
-        fclose(json);
-    }
+	float S = TSeqExec / TParExec;
+	
+
+    printf("T1\t%.6f sec\nTP\t%.6f sec\nS\t%.6f\n", TSeqExec, TParExec, S);
 	return 0;
 }
 
@@ -238,7 +235,6 @@ float sumImmediateNeighbours(float top, float right, float bottom, float left) {
  * =====================================================================================
  */
 float processTimeEffectOnCell (float mod, float old, float top, float right, float bottom, float left) {
-    usleep(TEMPS_ATTENTES);
     return (1-(4*mod))*old+mod*(sumImmediateNeighbours(top, right, bottom, left));
 }
 
